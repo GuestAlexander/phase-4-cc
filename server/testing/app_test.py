@@ -23,18 +23,20 @@ class TestApp:
             db.session.commit()
             response = app.test_client().post(
                 '/restaurant_pizzas',
-                data={
+                json={
                     "price": 3,
                     "pizza_id": pizza.id,
                     "restaurant_id": restaurant.id,
                 }
             )
-
-            rf = RestaurantPizza.query.filter_by(restaurant=restaurant).first()
-            assert response.json['price'] == 3
+            
+            rf = RestaurantPizza.query.filter_by(restaurant_id=restaurant.id).first()
             assert response.status_code == 201
             assert response.content_type == 'application/json'
-            assert rf.id
+            assert rf.id == 1
+            assert rf.pizza_id == pizza.id
+            assert rf.price == 3
+            assert rf.restaurant_id == restaurant.id
 
     def test_restaurants(self):
 
@@ -47,9 +49,7 @@ class TestApp:
             db.session.commit()
 
             response = app.test_client().get('/restaurants')
-            data = json.loads(response.data.decode())
-            assert(type(data) == list)
-            for record in data:
+            for record in response.json:
                 assert(type(record) == dict)
                 assert(record['id'])
                 assert(record['name'])
@@ -71,14 +71,13 @@ class TestApp:
             db.session.commit()
 
             response = app.test_client().get('/restaurants/1')
-            data = json.loads(response.data.decode())
-            assert(type(data) == dict)
-            assert(data['id'])
-            assert(data['name'])
-            assert(data['address'])
+            print(response.status_code)
+            # data = json.loads(response.data.decode())
+            assert response.json['id'] == 1
+            assert response.json['name'] == "Karen's Lobster Shack"
+            assert response.json['address'] == 'address1'
 
-            db.session.delete(restaurant)
-            db.session.commit()
+          
 
 
     def test_deletes_restaurant(self):
@@ -90,9 +89,9 @@ class TestApp:
             Restaurant.query.delete()
             cheese = Pizza(name = "Emma", ingredients = "Dough, Tomato Sauce, Cheese")            
             restaurant = Restaurant(name = "Karen's Pizza Shack", address = 'address1')
-            pizza_restaurant = RestaurantPizza(price = 3, restaurant = restaurant, pizza = cheese)
+            pizza_restaurant = RestaurantPizza(price = 3, restaurant_id=restaurant.id, pizza_id=cheese.id)
             db.session.add(restaurant)
-            db.session.add(pizza_restaurant)
+            # db.session.add(pizza_restaurant)
 
             db.session.commit()
 
@@ -117,11 +116,13 @@ class TestApp:
             db.session.commit()
             response = app.test_client().post(
                 '/restaurant_pizzas',
-                data={
+                
+                json={
                     "price": -1,
                     "pizza_id": pizza.id,
                     "restaurant_id": restaurant.id,
                 }
-            ).json
+            )
+            
+            assert response.json['errors'] == ["validation errors"]
 
-            assert response['error'] == "Invalid input"
