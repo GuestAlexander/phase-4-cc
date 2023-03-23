@@ -117,7 +117,7 @@ class TestApp:
             response = app.test_client().post(
                 '/restaurant_pizzas',
                 
-                json={
+                data={
                     "price": -1,
                     "pizza_id": pizza.id,
                     "restaurant_id": restaurant.id,
